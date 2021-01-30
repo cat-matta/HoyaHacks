@@ -36,7 +36,7 @@ driver.get(link)
 print("=" * 40)  # Shows in terminal when youtube summary page with search keyword is being scraped
 print("Scraping " + link)    
 
-sleep(5)
+time.sleep(5)
 # scrape top 8 video URLS that pop up on search
 video_list = driver.find_elements_by_xpath('//*[@id="video-title"]')
 
@@ -89,7 +89,7 @@ for url in urls:
     
     topcomments =driver.find_element_by_xpath("""//*[@id="menu"]/a[1]/paper-item/paper-item-body/div[1]""")
     topcomments.click()
-    sleep(3)
+    
 
     # Loads 20 comments , scroll two times to load next set of 40 comments. 
     for i in range(0,2):
