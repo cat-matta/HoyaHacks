@@ -5,6 +5,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import TimeoutException
 chrome_options = webdriver.ChromeOptions()
 chrome_options.add_argument('--headless')
 chrome_options.add_argument('--no-sandbox')
@@ -62,6 +63,8 @@ df = pd.DataFrame(columns = ['url', 'title', 'channel', 'no_of_views', 'time_upl
 # loop through each video
 videocounter = 0
 for url in urls:
+    print("=" * 40)
+    print("scraping ",titles[videocounter])
     driver.get(url)
     v_channel = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR,"div#upload-info yt-formatted-string"))).text
     print("channel name is ",v_channel)    
@@ -83,72 +86,79 @@ for url in urls:
     time.sleep(5)
 
     #sort by top comments
-    print("sorting by top comments")
-    sort= WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR,"div#icon-label")))
-    sort.click()
-    
-    topcomments =driver.find_element_by_xpath("""//*[@id="menu"]/a[1]/paper-item/paper-item-body/div[1]""")
-    topcomments.click()
-    
-
-    # Loads 20 comments , scroll two times to load next set of 40 comments. 
-    for i in range(0,2):
-        driver.execute_script("window.scrollTo(0,Math.max(document.documentElement.scrollHeight,document.body.scrollHeight,document.documentElement.clientHeight))")
-        print("scrolling to load more comments")
-        time.sleep(10)
-
-    #count total number of comments and set index to number of comments if less than 50 otherwise set as 50. 
-    totalcomments= len(driver.find_elements_by_xpath("""//*[@id="content-text"]"""))
-    
-
-    if totalcomments < 50:
-        index= totalcomments
-    else:
-        index= 50 
-    
-    # loop through each comment and scrape info
-    print("scraping through comments")
-    ccount = 0
-    while ccount < index: 
-        try:
-            comment = driver.find_elements_by_xpath('//*[@id="content-text"]')[ccount].text
-        except:
-            comment = ""
-        try:
-            authors = driver.find_elements_by_xpath('//a[@id="author-text"]/span')[ccount].text
-        except:
-            authors = ""
-        try:
-            comment_posted = driver.find_elements_by_xpath('//*[@id="published-time-text"]/a')[ccount].text
-        except:
-            comment_posted = ""
-        try:
-            replies = driver.find_elements_by_xpath('//*[@id="more-text"]')[ccount].text                    
-            if replies =="View reply":
-                replies= 1
-            else:
-                replies =replies.replace("View ","")
-                replies =replies.replace(" replies","")
-        except:
-            replies = ""
-        try:
-            upvotes = driver.find_elements_by_xpath('//*[@id="vote-count-middle"]')[ccount].text
-        except:
-            upvotes = ""
-
-        youtube_dict['url'] = url
-        youtube_dict['link_title'] = titles[videocounter]
-        youtube_dict['channel'] = v_channel
-        youtube_dict['no_of_views'] = v_views
-        youtube_dict['time_uploaded'] = v_timeUploaded
-        youtube_dict['comment'] = comment
-        youtube_dict['author'] = authors
-        youtube_dict['comment_posted'] = comment_posted
-        youtube_dict['no_of_replies'] = replies
-        youtube_dict['upvotes'] = upvotes
-        writer.writerow(youtube_dict.values())
+    # Check if comments is enabled
+    try:
+        print("sorting by top comments")
+        sort= WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR,"div#icon-label")))
+        sort.click()
+            
+        topcomments =driver.find_element_by_xpath("""//*[@id="menu"]/a[1]/paper-item/paper-item-body/div[1]""")
+        topcomments.click()
         
-        # increment comment counter
-        ccount = ccount + 1
-    # counter for the videos
+
+        # Loads 20 comments , scroll two times to load next set of 40 comments. 
+        for i in range(0,2):
+            driver.execute_script("window.scrollTo(0,Math.max(document.documentElement.scrollHeight,document.body.scrollHeight,document.documentElement.clientHeight))")
+            print("scrolling to load more comments")
+            time.sleep(5)
+
+        #count total number of comments and set index to number of comments if less than 50 otherwise set as 50. 
+        totalcomments= len(driver.find_elements_by_xpath("""//*[@id="content-text"]"""))
+        
+
+        if totalcomments < 50:
+            index= totalcomments
+        else:
+            index= 50 
+        
+        # loop through each comment and scrape info
+        print("scraping through comments")
+        ccount = 0
+        while ccount < index: 
+            try:
+                comment = driver.find_elements_by_xpath('//*[@id="content-text"]')[ccount].text
+            except:
+                comment = ""
+            try:
+                authors = driver.find_elements_by_xpath('//a[@id="author-text"]/span')[ccount].text
+            except:
+                authors = ""
+            try:
+                comment_posted = driver.find_elements_by_xpath('//*[@id="published-time-text"]/a')[ccount].text
+            except:
+                comment_posted = ""
+            try:
+                replies = driver.find_elements_by_xpath('//*[@id="more-text"]')[ccount].text                    
+                if replies =="View reply":
+                    replies= 1
+                else:
+                    replies =replies.replace("View ","")
+                    replies =replies.replace(" replies","")
+            except:
+                replies = ""
+            try:
+                upvotes = driver.find_elements_by_xpath('//*[@id="vote-count-middle"]')[ccount].text
+            except:
+                upvotes = ""
+
+            youtube_dict['url'] = url
+            youtube_dict['link_title'] = titles[videocounter]
+            youtube_dict['channel'] = v_channel
+            youtube_dict['no_of_views'] = v_views
+            youtube_dict['time_uploaded'] = v_timeUploaded
+            youtube_dict['comment'] = comment
+            youtube_dict['author'] = authors
+            youtube_dict['comment_posted'] = comment_posted
+            youtube_dict['no_of_replies'] = replies
+            youtube_dict['upvotes'] = upvotes
+            writer.writerow(youtube_dict.values())
+            
+            # increment comment counter
+            ccount = ccount + 1
+        # counter for the videos
+
+    # if video errors out, move onto the next one
+    except TimeoutException as e:
+        print(titles[videocounter], "  errored out: ",str(e))
+        print("moving onto next video")
     videocounter = videocounter+1
