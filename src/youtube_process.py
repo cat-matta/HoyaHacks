@@ -2,6 +2,8 @@ import pandas as pd
 import numpy as numpy
 import nltk
 nltk.download('punkt')
+nltk.download('stopwords')
+
 nltk.download('averaged_perceptron_tagger')
 nltk.download('wordnet')
 from nltk.corpus import stopwords
@@ -33,6 +35,10 @@ for col in df.columns:
 
 # fill null values for upvotes ( = 0 likes) as 0
 df["upvotes"].fillna(0, inplace=True)
+df["upvotes"] = (df["upvotes"].replace(r'[KM]+$',"",regex=True).astype(float) * \
+          df["upvotes"].str.extract(r'[\d\.]+([KM]+)', expand=False)
+             .fillna(1)
+             .replace(['K','M'], [10**3, 10**6]).astype(int))
 
 # Check for missing values
 for col in df.columns:
