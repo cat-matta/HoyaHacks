@@ -18,7 +18,7 @@ import re
 from math import ceil
 
 # Create a new .csv file to write data
-path = ".,/data/youtube_comments.csv"
+path = "../data/youtube_comments.csv"
 csv_file = open(path,'w', encoding="UTF-8", newline="")
 writer = csv.writer(csv_file)
 
